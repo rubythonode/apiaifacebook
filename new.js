@@ -4,41 +4,42 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
 const apiai = require('apiai');
+const Q = require('q');
 const app = express();
 
 //apiai App with customer access token
-const apiaiApp= apiai('');
+const apiaiApp= apiai(process.env.apiaiApp);
 
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //page access token
-var PAGE_ACCESS_TOKEN = '';
+var PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
 //server web main page
 app.get('/', function(req, res){
-  res.send("welcome");
+  res.send("welcome to PB hostetter");
 })
 
 //server webhook
 app.get('/webhook', function(req, res){
-	if(req.query['hub.mode'] && req.query['hub.verify_token'] === FB_VERIFY_TOKEN){
-		res.status(200).send(req.query['hub.challenge']);
-	}
-	else{
-		res.status(403).end();
-	}
+  if(req.query['hub.mode'] && req.query['hub.verify_token'] === process.env.FB_VERIFY_TOKEN){
+    res.status(200).send(req.query['hub.challenge']);
+  }
+  else{
+    res.status(403).end();
+  }
 });
 
 //message from FB customer
 app.post('/webhook', function(req, res){
-
-  	
-  	if (req.body.object === 'page') {
-    		req.body.entry.forEach((entry) => {
-      		entry.messaging.forEach((event) => {
+    if (req.body.object === 'page') {
+        req.body.entry.forEach((entry) => {
+          entry.messaging.forEach((event) => {
         if (event.message && event.message.text){
+            let user_profile = getUserProfile(event);
+            console.log(user_profile);
             MessageHandler(event);    
         };
       });
@@ -51,10 +52,9 @@ app.post('/webhook', function(req, res){
 function MessageHandler(event) {
   let sender = event.sender.id;
   let text = event.message.text;
-  
 //apiai text request
   let apiai = apiaiApp.textRequest(text, {
-    sessionId: FB_VERIFY_TOKEN // use any arbitrary id
+    sessionId: 'MY_HOSTETTER' // use any arbitrary id
   });
 
 //get reponse from apiai
@@ -62,7 +62,7 @@ function MessageHandler(event) {
     let apiaiText = response.result.fulfillment.speech;
     //let apiaiType = response.result.fulfillment.type;
     var apiaiMessages = response.result.fulfillment.messages;
-
+    //console.log(user_profile.first_name + "sent : " + text);
     //response from agent or domain
     if(response.result.source == 'agent'){
       for(let i=0;i<apiaiMessages.length;i++){
@@ -164,6 +164,8 @@ function sendingActionOff(event){
       }
     });
 }
+
+
 
 function sendFBmessage(event, replymessage){
   let sender = event.sender.id;
@@ -280,6 +282,19 @@ function CardMessage(event, amessage){
   return replymessage;
 }
 
+/*
+function getUserProfile(event){
+  var sender = event.sender.id;
+  var obj = [];
+  var graphUrl = 'https://graph.facebook.com/v2.6/'+sender+'?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token='+ PAGE_ACCESS_TOKEN;
+
+  request(graphUrl, function(err, res, body){
+    obj = JSON.parse(body);
+    
+  })
+  return obj;
+}
+*/
 
 //express server connectings
 const server = app.listen(process.env.PORT || 5000, () => {
