@@ -98,17 +98,12 @@ function MessageHandler(event) {
             replymessage = amessage.payload;
             break;
         }
-        //sendingActionOn(event);
         sendFBmessage(event, replymessage);
-        //sendingActionOff(event);
        }
     }else{
-      //sendingActionOn(event);
-      //handling domain response
       console.log("ITS DOMAIN SAYING");
       replymessage = TextMessage(event, amessage);
       sendFBmessage(event, replymessage);
-      //sendingActionOff(event);
     }
   });
   
@@ -188,8 +183,6 @@ function sendFBmessage(event, replymessage){
         console.log('Error : ', response.body.error);
       }else{
         console.log("Send Message Complete");
-        sendingActionOff(event);
-        return response.statusCode;
       }
     });
 }
@@ -295,6 +288,8 @@ function getUserProfile(event){
   return obj;
 }
 */
+
+
 
 //express server connectings
 const server = app.listen(process.env.PORT || 5000, () => {
