@@ -1,0 +1,30 @@
+{
+  "name": "apiaifacebook",
+  "version": "1.0.0",
+  "description": "deploy heroku as facebook chatbot with apiai",
+  "main": "new.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KorChris/apiaifacebook.git"
+  },
+  "keywords": [
+    "apiai",
+    "facebook",
+    "chatbot"
+  ],
+  "author": "KorChris",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KorChris/apiaifacebook/issues"
+  },
+  "homepage": "https://github.com/KorChris/apiaifacebook#readme",
+  "dependencies": {
+    "apiai": "^4.0.0",
+    "body-parser": "^1.16.0",
+    "express": "^4.14.1",
+    "request": "^2.79.0"
+  }
+}
