@@ -38,8 +38,6 @@ app.post('/webhook', function(req, res){
         req.body.entry.forEach((entry) => {
           entry.messaging.forEach((event) => {
         if (event.message && event.message.text){
-            let user_profile = getUserProfile(event);
-            console.log(user_profile);
             MessageHandler(event);    
         };
       });
@@ -62,45 +60,49 @@ function MessageHandler(event) {
     let apiaiText = response.result.fulfillment.speech;
     //let apiaiType = response.result.fulfillment.type;
     var apiaiMessages = response.result.fulfillment.messages;
-    //console.log(user_profile.first_name + "sent : " + text);
     //response from agent or domain
+
     if(response.result.source == 'agent'){
       for(let i=0;i<apiaiMessages.length;i++){
         let amessage=apiaiMessages[i];
         let replymessage = null;
-        //response from apiai agent
-        //which type of response get
-        switch(amessage.type){
-          case 0 :
-            //0 is text message
-            console.log("ITS TEXT MESSAGE");
-            replymessage = TextMessage(event, amessage);
-            break;
-          case 1 :
-            //1 is card message
-            console.log("ITS CARD MESSAGE");
-            replymessage = CardMessage(event, amessage);
-            break;
-          case 2 :
-            //2 is quick reply
-            console.log("ITS QUICK REPLY");
-            replymessage = QuickReply(event, amessage);
-            break;
-          case 3 :
-            //3 is image mesaage
-            console.log("ITS IMAGE MESSAGE");
-            replymessage = ImageMessage(event, amessage);
-            break;
-          case 4 :
-            //4 is custom payload
-            console.log("ITS CUSTOM PAYLOAD");
-            console.log(amessage.payload);
-            replymessage = amessage.payload;
-            break;
-        }
-        sendFBmessage(event, replymessage);
-       }
-    }else{
+
+          //response from apiai agent
+          //which type of response get
+          switch(amessage.type){
+            case 0 :
+              //0 is text message
+              console.log("ITS TEXT MESSAGE");
+              replymessage = TextMessage(event, amessage);
+              break;
+            case 1 :
+              //1 is card message
+              console.log("ITS CARD MESSAGE");
+              replymessage = CardMessage(event, amessage);
+              break;
+            case 2 :
+              //2 is quick reply
+              console.log("ITS QUICK REPLY");
+              replymessage = QuickReply(event, amessage);
+              break;
+            case 3 :
+              //3 is image mesaage
+              console.log("ITS IMAGE MESSAGE");
+              replymessage = ImageMessage(event, amessage);
+              break;
+            case 4 :
+              //4 is custom payload
+              console.log("ITS CUSTOM PAYLOAD");
+              console.log(amessage.payload);
+              replymessage = amessage.payload;
+              break;
+            }
+          sendFBmessage(event, replymessage);
+          }
+    }else if(response.result.action == 'buybutton'){
+       console.log('do nothing'); 
+    }
+    else{
       console.log("ITS DOMAIN SAYING");
       replymessage = TextMessage(event, amessage);
       sendFBmessage(event, replymessage);
@@ -160,14 +162,11 @@ function sendingActionOff(event){
     });
 }
 
-
-
 function sendFBmessage(event, replymessage){
   let sender = event.sender.id;
 
   sendingActionOn(event);
-  console.log("TYPEING ON ");
-
+  var deferred = q.defer();
   request({
       url: 'https://graph.facebook.com/v2.6/me/messages',
       qs: {access_token: PAGE_ACCESS_TOKEN},
@@ -179,12 +178,19 @@ function sendFBmessage(event, replymessage){
     }, (error, response) => {
       if(error){
         console.log('Error : ', error);
+        deferred.reject("deferred error : " + error);
       }else if(response.body.error) {
         console.log('Error : ', response.body.error);
+        deferred.reject("deferred error : " + response.body.error);
       }else{
+        sendingActionOff(event);
         console.log("Send Message Complete");
+        console.log(response.statusCode);
+        deferred.resolve("deferred SUCCESS");
       }
     });
+  console.log("deferred promise : " + deferred.promise);
+  return deferred.promise;
 }
 
 //send text message to FB customer with apiai response
@@ -237,6 +243,51 @@ function QuickReply(event, amessage){
   return replymessage;
 }
 
+/* Buttons 2 dimesional array!?!?!
+function makeBuyButton(event, amessage, subtotal, tax){
+  let sender = event.sender.id;
+  let replymessage = [];
+  let buttons = [];
+
+  if(amessage.buttons.length != 0){
+    
+    for(let j=0;j<amessage.buttons.length;j++){
+      buttons.push({
+        "type":"payment",
+        "title":"buy",
+        "payment_summary":{
+          "currency":"USD",
+          "payment_type":"FIXED_AMOUNT",
+          "is_test_payment":true,
+          "merchant_name":"Paris Baguette Hostetter",
+          "price_list":[{
+            "label":"Subtotal",
+            "amount":subtotal
+          },
+          {
+            "label":"Taxes",
+            "amount":tax
+          }]
+        }
+      });
+    };
+  }
+
+  replymessage = {
+      "attachment":{
+        "type":"template",
+        "payload":{
+          "template_type":"generic",
+          "elements":[{
+            "buttons":buttons
+          }]
+        }
+      }
+    }
+
+  return replymessage;
+}
+*/
 function CardMessage(event, amessage){
 
   let sender = event.sender.id;
